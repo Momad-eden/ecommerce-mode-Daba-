@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Menu, Search, ShoppingBag, X } from 'lucide-react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import CartDrawer from '@/components/cart/CartDrawer';
@@ -12,7 +11,12 @@ import { useCartStore } from '@/store/cartStore';
 const Navbar = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const totalItems = useCartStore((state) => state.getTotalItems());
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <>
@@ -41,18 +45,10 @@ const Navbar = () => {
                 variant="ghost" 
                 size="icon" 
                 className="hover:bg-transparent relative"
-                onClick={() => {
-                  setIsCartOpen(true);
-                  if (totalItems === 0) {
-                    toast.info('Votre panier est vide', {
-                      description: 'Ajoutez des produits pour commencer',
-                      duration: 2000,
-                    });
-                  }
-                }}
+                onClick={() => setIsCartOpen(true)}
               >
                 <ShoppingBag className="h-5 w-5" />
-                {totalItems > 0 && (
+                {mounted && totalItems > 0 && (
                   <span className="absolute -top-1 -right-1 bg-charcoal text-cream text-xs w-4 h-4 rounded-full flex items-center justify-center">
                     {totalItems}
                   </span>

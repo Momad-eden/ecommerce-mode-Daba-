@@ -21,8 +21,6 @@ export const useCartStore = create<CartStore>()(
         const currentItems = get().items;
         const variantId = variant?.id;
         
-        console.log('Ajout au panier:', { product: product.name, variant, quantity });
-        
         // Vérifier si l'article existe déjà
         const existingIndex = currentItems.findIndex(
           item => item.product.id === product.id && item.variant?.id === variantId
@@ -42,7 +40,6 @@ export const useCartStore = create<CartStore>()(
         }
         
         set({ items: updatedItems });
-        console.log('Panier mis à jour:', updatedItems);
       },
 
       removeItem: (productId, variantId) => {
@@ -66,18 +63,18 @@ export const useCartStore = create<CartStore>()(
       clearCart: () => set({ items: [] }),
 
       getTotalItems: () => {
-        const total = get().items.reduce((total, item) => total + item.quantity, 0);
-        console.log('Total items:', total);
-        return total;
+        // Protection côté serveur pour éviter l'hydratation mismatch
+        if (typeof window === 'undefined') return 0;
+        return get().items.reduce((total, item) => total + item.quantity, 0);
       },
 
       getTotalPrice: () => {
-        const total = get().items.reduce((total, item) => {
+        // Protection côté serveur pour éviter l'hydratation mismatch
+        if (typeof window === 'undefined') return 0;
+        return get().items.reduce((total, item) => {
           const price = item.variant?.price || item.product.price;
           return total + price * item.quantity;
         }, 0);
-        console.log('Total price:', total);
-        return total;
       },
     }),
     {

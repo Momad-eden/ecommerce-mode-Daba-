@@ -3,6 +3,7 @@ import { Inter, Cormorant_Garamond } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
 import BottomNav from '@/components/layout/BottomNav';
+import WhatsAppButton from '@/components/whatsapp/WhatsAppButton';
 import { Toaster } from 'sonner';
 
 const inter = Inter({ 
@@ -29,12 +30,19 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Numéro WhatsApp du commerce (format international sans le +)
+  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '221781234567';
+
   return (
     <html lang="fr" className={`${inter.variable} ${cormorant.variable}`}>
       <body className="font-sans">
         <Navbar />
         <main className="min-h-screen">{children}</main>
         <BottomNav />
+        
+        {/* Bouton WhatsApp flottant global */}
+        <WhatsAppButton phoneNumber={whatsappNumber} />
+        
         <Toaster 
           position="top-center" 
           richColors 
