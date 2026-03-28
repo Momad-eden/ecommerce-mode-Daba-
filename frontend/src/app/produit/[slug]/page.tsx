@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Heart, ShoppingBag, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { ArrowLeft, Heart, ShoppingBag, ChevronLeft, ChevronRight, Check, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getProductBySlug } from '@/services/api';
 import { Product } from '@/types/product';
 import { toast } from 'sonner';
 import { useCartStore } from '@/store/cartStore';
+import { useWhatsApp } from '@/hooks/useWhatsApp';
 
 export default function ProductPage() {
   const { slug } = useParams();
@@ -22,6 +23,7 @@ export default function ProductPage() {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const addToCart = useCartStore((state) => state.addItem);
+  const { generateProductMessage, openWhatsApp } = useWhatsApp();
 
   useEffect(() => {
     if (slug) {
@@ -67,6 +69,14 @@ export default function ProductPage() {
   const discountedPrice = hasPromotion && product
     ? product.price * (1 - product.promotions[0].value / 100)
     : null;
+
+  const handleWhatsAppShare = () => {
+    const selectedVariant = product.variants?.find(v =>
+      v.size === selectedSize && v.color === selectedColor
+    );
+    const message = generateProductMessage(product, selectedVariant || null, quantity);
+    openWhatsApp(message);
+  };
 
   if (loading) {
     return (
@@ -326,24 +336,35 @@ export default function ProductPage() {
                 Acheter — {(discountedPrice || product.price).toLocaleString()} FCFA
               </Button>
 
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const selectedVariant = product.variants?.find(v =>
-                    v.size === selectedSize && v.color === selectedColor
-                  );
-                  addToCart(product, selectedVariant || null, quantity);
-                  
-                  // Afficher le toast de confirmation
-                  toast.success('Ajouté au panier', {
-                    description: `${product.name} × ${quantity}`,
-                    duration: 2000,
-                  });
-                }}
-                className="w-full border-charcoal text-charcoal hover:bg-charcoal hover:text-white rounded-full py-5 transition-all bg-white/90 backdrop-blur-sm"
-              >
-                Ajouter au panier
-              </Button>
+              {/* Deux boutons en ligne */}
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const selectedVariant = product.variants?.find(v =>
+                      v.size === selectedSize && v.color === selectedColor
+                    );
+                    addToCart(product, selectedVariant || null, quantity);
+                    
+                    toast.success('Ajouté au panier', {
+                      description: `${product.name} × ${quantity}`,
+                      duration: 2000,
+                    });
+                  }}
+                  className="flex-1 border-charcoal text-charcoal hover:bg-charcoal hover:text-white rounded-full py-5 transition-all bg-white/90 backdrop-blur-sm"
+                >
+                  Ajouter au panier
+                </Button>
+
+                {/* Bouton WhatsApp */}
+                <Button
+                  onClick={handleWhatsAppShare}
+                  className="flex-1 bg-green-500 text-white hover:bg-green-600 rounded-full py-5 transition-all flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Valider par WhatsApp
+                </Button>
+              </div>
 
             </div>
           </div>

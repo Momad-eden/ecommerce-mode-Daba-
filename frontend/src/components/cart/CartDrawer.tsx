@@ -1,14 +1,43 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingBag, Trash2, Plus, Minus } from 'lucide-react';
+import { X, ShoppingBag, Trash2, Plus, Minus, MessageCircle } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
+import { toast } from 'sonner';
+import { useWhatsApp } from '@/hooks/useWhatsApp';
 
 export default function CartDrawer({ isOpen, onClose }: any) {
+  const router = useRouter();
   const { items, removeItem, updateQuantity, getTotalItems, getTotalPrice } = useCartStore();
+  const { generateCartMessage, openWhatsApp } = useWhatsApp();
 
   const totalItems = getTotalItems();
   const totalPrice = getTotalPrice();
+
+  const handleCheckout = () => {
+    if (items.length === 0) {
+      toast.error('Votre panier est vide');
+      return;
+    }
+    onClose();
+    router.push('/checkout');
+  };
+
+  const handleRemoveItem = (productId: number, variantId?: number) => {
+    removeItem(productId, variantId);
+    toast.info('Produit retiré du panier');
+  };
+
+  const handleWhatsAppShare = () => {
+    if (items.length === 0) {
+      toast.error('Votre panier est vide');
+      return;
+    }
+    const message = generateCartMessage(items, totalPrice);
+    openWhatsApp(message);
+    onClose();
+  };
 
   return (
     <AnimatePresence>
@@ -55,6 +84,12 @@ export default function CartDrawer({ isOpen, onClose }: any) {
                   <div className="flex flex-col items-center justify-center h-full text-center">
                     <ShoppingBag className="h-16 w-16 text-gray-300 mb-4" />
                     <p className="text-gray-500">Votre panier est vide</p>
+                    <button
+                      onClick={onClose}
+                      className="mt-4 text-black underline"
+                    >
+                      Découvrir nos produits
+                    </button>
                   </div>
                 ) : (
                   <>
@@ -69,6 +104,7 @@ export default function CartDrawer({ isOpen, onClose }: any) {
                         >
                           <img
                             src={item.product.image_main}
+                            alt={item.product.name}
                             className="w-20 h-24 object-cover rounded-xl"
                           />
 
@@ -113,7 +149,7 @@ export default function CartDrawer({ isOpen, onClose }: any) {
 
                           {/* DELETE */}
                           <button
-                            onClick={() => removeItem(item.product.id, item.variant?.id)}
+                            onClick={() => handleRemoveItem(item.product.id, item.variant?.id)}
                             className="text-gray-400 hover:text-red-500 transition"
                           >
                             <Trash2 size={16} />
@@ -137,18 +173,27 @@ export default function CartDrawer({ isOpen, onClose }: any) {
 
                     {/* CTA */}
                     <div className="space-y-3">
-                      {/* Bouton principal */}
+                      {/* Bouton principal - Commander */}
                       <button
-                        className="w-full bg-black text-white py-4 rounded-2xl font-medium
-                        hover:bg-gray-900 active:scale-[0.98] transition"
+                        onClick={handleCheckout}
+                        className="w-full bg-black text-white py-4 rounded-2xl font-medium hover:bg-gray-900 active:scale-[0.98] transition"
                       >
                         Commander
                       </button>
 
-                      {/* Bouton secondaire */}
+                      {/* Bouton WhatsApp */}
+                      <button
+                        onClick={handleWhatsAppShare}
+                        className="w-full bg-green-500 text-white py-4 rounded-2xl font-medium hover:bg-green-600 active:scale-[0.98] transition flex items-center justify-center gap-2"
+                      >
+                        <MessageCircle size={18} />
+                        Valider par WhatsApp
+                      </button>
+
+                      {/* Bouton secondaire - Continuer les achats */}
                       <button
                         onClick={onClose}
-                        className="w-full border-charcoal text-charcoal hover:bg-charcoal hover:text-white rounded-full py-5 transition-all bg-white/90 backdrop-blur-sm"
+                        className="w-full border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-2xl py-4 font-medium transition"
                       >
                         Continuer mes achats
                       </button>
