@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, ShoppingBag } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import ProductCard from '@/components/shop/ProductCard';
 import FiltersDesktop from '@/components/shop/FiltersDesktop';
@@ -12,17 +12,20 @@ import { Product, Category } from '@/types/product';
 
 export default function BoutiquePage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedGender, setSelectedGender] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500000]);
   const [maxPrice, setMaxPrice] = useState(500000);
+
   const [visibleCount, setVisibleCount] = useState(12);
 
+  // FETCH DATA
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -30,11 +33,13 @@ export default function BoutiquePage() {
           getProducts(),
           getCategories()
         ]);
-        setProducts(allProducts || []);
+
+        const safeProducts = allProducts || [];
+
+        setProducts(safeProducts);
         setCategories(allCategories || []);
-        
-        // Calculer le prix max
-        const max = Math.max(...(allProducts || []).map(p => p.price), 500000);
+
+        const max = Math.max(...safeProducts.map(p => p.price || 0), 500000);
         setMaxPrice(max);
         setPriceRange([0, max]);
       } catch (error) {
@@ -43,46 +48,49 @@ export default function BoutiquePage() {
         setLoading(false);
       }
     };
+
     fetchData();
   }, []);
 
-  useEffect(() => {
+  // FILTER LOGIC (OPTIMISÉ avec useMemo)
+  const filteredProducts = useMemo(() => {
     let filtered = [...products];
-    
-    // Filtre par recherche
+
     if (searchTerm) {
-      filtered = filtered.filter(p => 
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchTerm.toLowerCase())
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(term) ||
+        p.description?.toLowerCase().includes(term)
       );
     }
-    
-    // Filtre par catégorie
+
     if (selectedCategory) {
-      filtered = filtered.filter(p => 
-        p.categories.some(c => c.slug === selectedCategory)
+      filtered = filtered.filter(p =>
+        p.categories?.some(c => c.slug === selectedCategory)
       );
     }
-    
-    // Filtre par genre
+
     if (selectedGender) {
-      filtered = filtered.filter(p => 
-        p.categories.some(c => c.gender === selectedGender)
+      filtered = filtered.filter(p =>
+        p.categories?.some(c => c.gender === selectedGender)
       );
     }
-    
-    // Filtre par style
+
     if (selectedStyle) {
-      filtered = filtered.filter(p => 
-        p.categories.some(c => c.style === selectedStyle)
+      filtered = filtered.filter(p =>
+        p.categories?.some(c => c.style === selectedStyle)
       );
     }
-    
-    // Filtre par prix
-    filtered = filtered.filter(p => p.price <= priceRange[1]);
-    
-    setFilteredProducts(filtered);
+
+    filtered = filtered.filter(
+      p => p.price >= priceRange[0] && p.price <= priceRange[1]
+    );
+
+    return filtered;
   }, [products, searchTerm, selectedCategory, selectedGender, selectedStyle, priceRange]);
+
+  const displayedProducts = filteredProducts.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredProducts.length;
 
   const handleResetFilters = () => {
     setSelectedCategory('');
@@ -92,48 +100,43 @@ export default function BoutiquePage() {
     setSearchTerm('');
   };
 
-  const loadMore = () => {
-    setVisibleCount(prev => prev + 12);
-  };
+  const loadMore = () => setVisibleCount(prev => prev + 12);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-charcoal border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-stone text-sm">Chargement...</p>
-        </div>
+        <div className="w-10 h-10 border-2 border-black border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  const displayedProducts = filteredProducts.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredProducts.length;
-
   return (
-    <div className="min-h-screen bg-cream">
-      <div className="container-luxury px-4 sm:px-6 md:px-8 py-8 md:py-12">
-        {/* Header de la page */}
-        <div className="mb-8 md:mb-12">
-          <h1 className="text-3xl md:text-4xl font-light text-charcoal mb-4">Boutique</h1>
-          <p className="text-stone text-sm md:text-base">
-            Découvrez notre collection de pièces uniques
+    <div className="min-h-screen bg-[#fafafa] pb-28"> {/* espace pour BottomNav */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+        {/* HEADER PREMIUM */}
+        <div className="mb-10">
+          <h1 className="text-3xl md:text-4xl font-semibold text-gray-900">
+            Boutique
+          </h1>
+          <p className="text-gray-500 mt-2">
+            Explorez nos collections exclusives
           </p>
         </div>
 
-        {/* Barre de recherche et filtres */}
-        <div className="flex flex-col gap-4 mb-8">
+        {/* SEARCH + FILTER */}
+        <div className="mb-8 space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                type="text"
                 placeholder="Rechercher un produit..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white border-stone/20 rounded-full"
+                className="pl-10 h-12 rounded-full border-gray-200 shadow-sm"
               />
             </div>
+
             <div className="md:hidden">
               <FiltersMobile
                 categories={categories}
@@ -150,8 +153,7 @@ export default function BoutiquePage() {
               />
             </div>
           </div>
-          
-          {/* Filtres desktop */}
+
           <div className="hidden md:block">
             <FiltersDesktop
               categories={categories}
@@ -169,33 +171,32 @@ export default function BoutiquePage() {
           </div>
         </div>
 
-        {/* Résultats */}
-        <div className="mb-4">
-          <p className="text-sm text-stone">
-            {filteredProducts.length} produit(s) trouvé(s)
+        {/* RESULT COUNT */}
+        <div className="flex justify-between items-center mb-6">
+          <p className="text-sm text-gray-500">
+            {filteredProducts.length} produits
           </p>
         </div>
 
-        {/* Grille produits */}
+        {/* GRID */}
         {displayedProducts.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-stone">Aucun produit ne correspond à vos critères</p>
+          <div className="text-center py-20">
+            <p className="text-gray-500">Aucun produit trouvé</p>
             <button
               onClick={handleResetFilters}
-              className="mt-4 text-charcoal underline hover:no-underline"
+              className="mt-4 text-black underline"
             >
-              Réinitialiser les filtres
+              Réinitialiser
             </button>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 md:gap-8">
               {displayedProducts.map((product, index) => (
                 <ProductCard key={product.id} product={product} index={index} />
               ))}
             </div>
-            
-            {/* Load more */}
+
             {hasMore && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -204,7 +205,7 @@ export default function BoutiquePage() {
               >
                 <button
                   onClick={loadMore}
-                  className="px-8 py-3 border border-charcoal/30 text-charcoal hover:bg-charcoal hover:text-white rounded-full transition-all duration-300"
+                  className="px-10 py-3 bg-black text-white rounded-full hover:bg-gray-900 transition"
                 >
                   Charger plus
                 </button>
@@ -214,5 +215,57 @@ export default function BoutiquePage() {
         )}
       </div>
     </div>
+  );
+}
+
+
+// =========================
+// ✅ PRODUCT CARD (IMPROVED UX)
+// =========================
+
+/*
+👉 Objectifs:
+- Image + nom + prix = bloc cliquable
+- Feedback visuel (mobile & desktop)
+- Effet premium (comme Zara / Nike)
+*/
+
+export function ProductCardImproved({ product, index }: any) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="group cursor-pointer"
+    >
+      {/* BLOC CLIQUABLE */}
+      <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition">
+
+        {/* IMAGE */}
+        <div className="relative overflow-hidden">
+          <img
+            src={product.image_main}
+            alt={product.name}
+            className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+
+          {/* INDICATEUR MOBILE (cliquable) */}
+          <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full md:hidden">
+            Voir
+          </div>
+        </div>
+
+        {/* INFOS PRODUIT */}
+        <div className="p-3 space-y-1">
+          <h3 className="text-sm font-medium text-gray-800 line-clamp-2">
+            {product.name}
+          </h3>
+
+          <p className="text-sm font-semibold text-black">
+            {product.price.toLocaleString()} FCFA
+          </p>
+        </div>
+      </div>
+    </motion.div>
   );
 }

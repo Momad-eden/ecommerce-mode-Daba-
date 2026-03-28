@@ -3,6 +3,7 @@ import { Inter, Cormorant_Garamond } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
 import BottomNav from '@/components/layout/BottomNav';
+import { Toaster } from 'sonner';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -34,6 +35,22 @@ export default function RootLayout({
         <Navbar />
         <main className="min-h-screen">{children}</main>
         <BottomNav />
+        <Toaster 
+          position="top-center" 
+          richColors 
+          toastOptions={{
+            style: {
+              background: '#1a1a1a',
+              color: '#fff',
+              borderRadius: '100px',
+              padding: '12px 20px',
+              fontSize: '14px',
+              border: '1px solid rgba(255,255,255,0.1)',
+            },
+            duration: 2000,
+            className: 'font-sans',
+          }}
+        />
       </body>
     </html>
   );

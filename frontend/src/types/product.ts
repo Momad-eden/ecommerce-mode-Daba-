@@ -19,6 +19,17 @@ export interface ProductVariant {
   sku: string;
 }
 
+export interface Promotion {
+  id: number;
+  name: string;
+  description?: string;
+  promotion_type: 'percentage' | 'fixed';
+  value: number;
+  start_date: string;
+  end_date: string;
+  active: boolean;
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -34,19 +45,9 @@ export interface Product {
   best_seller: boolean;
   new_arrival: boolean;
   variants: ProductVariant[];
+  promotions?: Promotion[];  // Ajout pour les promotions
   created_at: string;
   updated_at: string;
-}
-
-export interface Promotion {
-  id: number;
-  name: string;
-  description?: string;
-  promotion_type: 'percentage' | 'fixed';
-  value: number;
-  start_date: string;
-  end_date: string;
-  active: boolean;
 }
 
 export interface CartItem {

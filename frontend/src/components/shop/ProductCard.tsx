@@ -4,8 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ShoppingBag, Eye } from 'lucide-react';
+import { toast } from 'sonner';
 import ProductImage from '@/components/ui/ProductImage';
 import { Product } from '@/types/product';
+import { useCartStore } from '@/store/cartStore';
 
 interface ProductCardProps {
   product: Product;
@@ -15,9 +17,10 @@ interface ProductCardProps {
 export default function ProductCard({ product, index = 0 }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [currentImage, setCurrentImage] = useState(product.image_main);
+  const addToCart = useCartStore((state) => state.addItem);
 
   const hasPromotion = product.promotions && product.promotions.length > 0;
-  const discountedPrice = hasPromotion 
+  const discountedPrice = hasPromotion
     ? product.price * (1 - product.promotions[0].value / 100)
     : null;
 
@@ -38,11 +41,10 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             src={currentImage}
             alt={product.name}
             fill
-            className={`object-cover transition-all duration-700 ${
-              isHovered ? 'scale-110' : 'scale-100'
-            }`}
+            className={`object-cover transition-all duration-700 ${isHovered ? 'scale-110' : 'scale-100'
+              }`}
           />
-          
+
           {/* Deuxième image au hover */}
           {product.image_secondary_1 && isHovered && (
             <ProductImage
@@ -52,7 +54,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
               className="object-cover transition-opacity duration-500 opacity-100"
             />
           )}
-          
+
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-1">
             {hasPromotion && (
@@ -66,21 +68,33 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
               </span>
             )}
           </div>
-          
+
           {/* Actions au hover (desktop) */}
-          <div className={`absolute bottom-3 left-3 right-3 flex gap-2 transition-opacity duration-300 ${
-            isHovered ? 'opacity-100' : 'opacity-0 md:opacity-0'
-          }`}>
-            <button className="flex-1 bg-white/90 backdrop-blur-sm text-charcoal text-xs py-2 rounded-full flex items-center justify-center gap-1 hover:bg-white transition">
+          <div className={`absolute bottom-3 left-3 right-3 flex gap-2 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0 md:opacity-0'
+            }`}>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                addToCart(product, null, 1);
+                toast.success('Ajouté au panier', {
+                  description: product.name,
+                  duration: 1500,
+                });
+              }}
+              className="flex-1 bg-white/90 backdrop-blur-sm text-charcoal text-xs py-2 rounded-full flex items-center justify-center gap-1 hover:bg-white transition"
+            >
               <ShoppingBag className="h-3 w-3" />
               <span className="hidden sm:inline">Ajouter</span>
             </button>
-            <button className="bg-white/90 backdrop-blur-sm text-charcoal p-2 rounded-full hover:bg-white transition">
+            <button 
+              onClick={(e) => e.preventDefault()}
+              className="bg-white/90 backdrop-blur-sm text-charcoal p-2 rounded-full hover:bg-white transition"
+            >
               <Eye className="h-3 w-3" />
             </button>
           </div>
         </div>
-        
+
         {/* Infos produit */}
         <div className="text-center">
           <h3 className="text-sm font-light text-charcoal mb-1 line-clamp-1">
